@@ -1,0 +1,34 @@
+# Runtime parameters — loaded and passed as Graph(config=...).
+# Separate from config/agent.yaml (the flat registration manifest, which carries
+# no runtime block; a runtime value placed there is read by nothing).
+
+# Backbone retry budget: read by AgentBaseGraph.route().
+max_retry: 3
+
+# Per-invoke timeout budget. Recognised by the framework configuration
+# contract; this template calls no external service, so nothing here consumes
+# it today.
+timeout_s: 30
+
+llm:
+  # The grounding contract for the answer step. GenerateAnswerNode resolves
+  # this path, records whether it resolved in its audit event, and assembles
+  # the answer deterministically from the reranked passages. Sampling
+  # parameters are deliberately absent: `generation_mode: deterministic` in the
+  # manifest means no model is invoked, and declaring a temperature that
+  # configures nothing is worse than declaring nothing.
+  system_prompt_template: "prompts/insurance_underwriting.j2"
+
+# Retrieval tuning over the underwriting knowledge base. Every value is
+# validated (type, finiteness, range) before it is forwarded to the inner
+# graph; an invalid entry is dropped and the consuming node keeps its
+# documented default.
+retrieval:
+  top_k: 8               # 1-50    (RetrieveNode) — long actuarial / policy passages
+  score_threshold: 0.75  # 0.0-1.0 (RerankFilterNode) — answers affect underwriting decisions
+  hybrid_search: true    # keyword + title matching; the knowledge base carries codes and product ids
+
+security:
+  # Records that the output boundary is active. PostProcessNode runs it
+  # unconditionally — this key states the posture, it does not switch it.
+  s3_gate_enabled: true

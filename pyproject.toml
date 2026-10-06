@@ -1,0 +1,53 @@
+[project]
+name = "ins-c2-016"
+version = "0.1.0"
+description = "InsuranceUnderwritingRiskScoringAgent — AgentCore Template"
+requires-python = ">=3.11"
+# The framework (agenticstar-agentcore) is not resolvable from the default
+# package index — it is installed from the platform's own registry by the
+# pipeline that builds and deploys this template. Pinning it here would make
+# `pip install -e .` fail for anyone without that index configured.
+dependencies = [
+    "agenticstar-agentcore[marketplace,openai]==1.0.3",]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.0.3",
+    "pytest-cov==5.0.0",
+    "pytest-asyncio==1.4.0",
+    "ruff==0.4.4",
+    "mypy==1.10.0",
+    "types-PyYAML==6.0.12.20260815",
+]
+
+[build-system]
+requires = ["setuptools==68.2.2"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+# The modules under src/examples/ are read-only composition illustrations;
+# they are excluded rather than edited.
+exclude = ["src/examples/"]
+# Framework-wheel compatibility exception: the published agenticstar-agentcore
+# wheel ships no py.typed marker, so framework.* / shared.* imports resolve to
+# Any — which makes every required framework subclass an [import-untyped] /
+# "subclass of Any" error. All other strict settings stay on.
+disallow_subclassing_any = false
+
+[[tool.mypy.overrides]]
+module = ["framework.*", "shared.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Same root cause as disallow_subclassing_any above, in the one place it cannot
+# be expressed that way: with the untyped wheel, AgentState resolves to Any, so
+# `class State(AgentState)` reports [valid-type] on EVERY declared field. These
+# are all one cause, not field-level defects.
+module = ["src.schemas.state"]
+disable_error_code = ["valid-type"]
